@@ -1,0 +1,26 @@
+# Example seed issues. Import with a simple loader script (future).
+- title: "Quantum Kittens Overrunning Research Labs"
+  prompt: |
+    Reports indicate that self-cloning quantum kittens are tunneling through laboratory walls,
+    triggering a purr-induced resonance cascade. The public demands answers.
+  tags: [science, pets, ethics]
+  options:
+    - text: "License all quantum kittens and require bell-collars with anti-phase dampers."
+      effects:
+        - op: add
+          path: economy.value
+          value: -0.02
+        - op: mul
+          path: civil_rights.value
+          value: 0.98
+        - op: tag
+          path: tags
+          value: kitten_registrar
+    - text: "Grant kittens full sentience rights; designate labs as public cuddle zones."
+      effects:
+        - op: add
+          path: civil_rights.value
+          value: 0.05
+        - op: add
+          path: economy.value
+          value: -0.03

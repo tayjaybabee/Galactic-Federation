@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "galactic_federation"
+version = "0.1.0"
+description = "A satirical-serious, NationStates-style, space governance sim"
+authors = ["Taylor-Jayde Blackstone <taylor@example.com>"]
+readme = "README.md"
+packages = [{ include = "galactic_federation" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.30.0"}
+pydantic = "^2.8.0"
+SQLAlchemy = "^2.0.36"
+psycopg2-binary = "^2.9.9"
+python-dotenv = "^1.0.1"
+redis = "^5.0.7"
+celery = "^5.4.0"
+python-json-logger = "^2.0.7"
+pyyaml = "^6.0.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+pytest-asyncio = "^0.23.8"
+httpx = "^0.27.2"
+ruff = "^0.6.9"
+black = "^24.8.0"
+alembic = "^1.13.2"
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
