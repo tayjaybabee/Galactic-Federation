@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Generator
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
-from . import schemas
 from ..core.settings import get_settings
 
 class Base(DeclarativeBase):
