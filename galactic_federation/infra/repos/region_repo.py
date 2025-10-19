@@ -1,6 +1,6 @@
 from __future__ import annotations
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 from ..schemas import Sector
 
 class SectorRepo:
@@ -8,4 +8,6 @@ class SectorRepo:
         self._db = db
 
     def by_slug(self, slug: str) -> Sector | None:
-        return self._db.scalars(select(Sector).where(Sector.slug == slug)).first()
+        return self._db.scalars(
+            select(Sector).where(func.lower(Sector.slug) == slug.lower())
+        ).first()

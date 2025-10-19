@@ -2,7 +2,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from ...infra.repos.issue_repo import IssueRepo
+from ...infra.repos.planet_repo import PlanetRepo
+from ...infra.schemas import Decision
 from ..entities import PlanetState
 
 # Utilities
@@ -45,6 +49,8 @@ class DecisionResolver:
                 node[key] = float(node.get(key, 0.0)) * float(val)
             elif op == 'tag':
                 state.tags.add(str(val))
+            else:
+                raise ValueError(f"unsupported effect operation '{op}'")
         # clamp core values 0..1 for MVP
         for k in ('economy', 'civil_rights', 'political_freedom'):
             v = state.stats.get(k, {}).get('value', 0.5)
@@ -60,20 +66,71 @@ class IssueEngine:
         issues_per_day: Count of issues surfaced daily.
     """
 
-    db: Any
+    db: Session
     issues_per_day: int
 
     def available_issues(self) -> list[dict]:
         repo = IssueRepo(self.db)
+        issues = repo.active()[: self.issues_per_day]
         return [
             {
-                'id': i.id,
-                'title': i.title,
-                'prompt': i.prompt,
-                'tags': i.tags,
+                'id': issue.id,
+                'title': issue.title,
+                'prompt': issue.prompt,
+                'tags': issue.tags,
+                'options': [
+                    {
+                        'id': option.id,
+                        'text': option.text,
+                        'effects': option.effects_json,
+                    }
+                    for option in repo.options_for(issue.id)
+                ],
             }
-            for i in repo.active()
+            for issue in issues
         ]
 
-    def apply_decision(self, planet_state: PlanetState, effects_payload: dict) -> PlanetState:
-        return DecisionResolver().apply_all(planet_state, effects_payload)
+    def apply_decision(
+        self,
+        *,
+        planet_id: int,
+        issue_id: int,
+        option_id: int,
+        effects_payload: dict[str, Any] | None,
+    ) -> PlanetState:
+        repo = PlanetRepo(self.db)
+        planet = repo.by_id(planet_id)
+        if planet is None:
+            raise LookupError(f'planet {planet_id} not found')
+
+        state = PlanetState()
+        existing_stats = planet.stats if isinstance(planet.stats, dict) else {}
+        for key, value in existing_stats.items():
+            if key == 'tags':
+                if isinstance(value, list):
+                    state.tags.update(str(tag) for tag in value)
+                continue
+            if isinstance(value, dict):
+                state.stats.setdefault(key, {})
+                state.stats[key].update(value)
+
+        payload = effects_payload or {}
+        new_state = DecisionResolver().apply_all(state, payload)
+
+        updated_stats = {k: dict(v) for k, v in new_state.stats.items()}
+        if new_state.tags:
+            updated_stats['tags'] = sorted(new_state.tags)
+        else:
+            updated_stats.pop('tags', None)
+        planet.stats = updated_stats
+
+        decision = Decision(
+            planet_id=planet_id,
+            issue_id=issue_id,
+            option_id=option_id,
+            effects_applied_json=payload,
+        )
+        self.db.add(decision)
+        self.db.commit()
+        self.db.refresh(planet)
+        return new_state
